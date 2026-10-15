@@ -9,10 +9,10 @@
 # - Canonical MusicBrainz data dumps (CC0):
 #   https://metabrainz.org/datasets/download "MusicBrainz Canonical Data Dumps"
 #     1. musicbrainz-canonical-dump-20261003-080003.tar.zst
-#   The current canonical dump is dated October 15, 2026 while the AcousticBrainz feature data stopped in June 2022.
+#     The current canonical dump is dated October 15, 2026 while the AcousticBrainz feature data stopped in June 2022.
 #
 # Before running this script, download and extract these four archives into
-# data-raw/acousticbrainz/:
+# data-raw/unextracted-files/:
 #
 # After extraction, data-raw/acousticbrainz/ (including subdirectories) must
 # contain these four CSV files:

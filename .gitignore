@@ -2,6 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-*tar.zst
-*tar.zst*
+*.csv
 sha256sums
+unextracted-files/

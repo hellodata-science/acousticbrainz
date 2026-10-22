@@ -32,18 +32,16 @@ library(DBI)
 library(dbplyr)
 library(duckdb)
 library(fs)
+library(here)
 
 # Configuration -----------------------------------------------------------
 
-raw_data_dir <- path("data-raw", "acousticbrainz")
-artist_pool_file <- path("data-raw", "billboard_artist_100_2014_2022.csv")
-output_dir <- path("data")
-output_file <- path(output_dir, "acousticbrainz_songs.csv")
+raw_data_dir <- here("data-raw")
+artist_pool_file <- here("data-raw", "artists-to-select.csv")
+output_file <- here("data", "acousticbrainz_songs.csv")
 
 # These caps prevent a few prolific artists from dominating the dataset.
-n_artists <- 200L
 max_songs_per_artist <- 25L
-artist_seed <- 20260924L
 song_seed <- 20260925L
 
 # Locate and validate source files ----------------------------------------
@@ -160,8 +158,8 @@ check_columns(metadata_file, required_metadata_columns)
 
 if (!file_exists(artist_pool_file)) {
   cli::cli_abort(c(
-    "The Billboard Artist 100 eligibility file is missing: {.path {artist_pool_file}}.",
-    "i" = "Supply a licensed or publisher-approved list with one column named {.field artist}."
+    "The artist-selection file is missing: {.path {artist_pool_file}}.",
+    "i" = "Supply a CSV with one column named {.field artist}."
   ))
 }
 
@@ -173,12 +171,6 @@ artist_pool <- read_csv(
   transmute(target_artist = str_squish(artist)) |>
   filter(!is.na(target_artist), target_artist != "") |>
   distinct()
-
-if (nrow(artist_pool) < n_artists) {
-  cli::cli_abort(
-    "The artist pool has only {nrow(artist_pool)} artists; at least {n_artists} are required."
-  )
-}
 
 # Create lazy DuckDB tables -----------------------------------------------
 
@@ -247,6 +239,7 @@ dbExecute(
   "CREATE TEMP TABLE selected_metadata AS
    SELECT
      m.recording_mbid AS canonical_recording_mbid,
+     m.release_mbid AS release_mbid,
      m.artist_credit_name AS artist,
      m.recording_name AS song,
      m.release_name AS release,
@@ -330,6 +323,7 @@ song_features <- target_recordings |>
     artist,
     song,
     release,
+    release_mbid,
     average_loudness,
     dynamic_complexity,
     mfcc_zero_mean,
@@ -400,6 +394,7 @@ song_features <- target_recordings |>
   group_by(
     canonical_recording_mbid,
     target_artist,
+    release_mbid,
     artist,
     song,
     release
@@ -437,24 +432,25 @@ if (nrow(song_features) == 0L) {
   )
 }
 
-# Select 200 eligible artists, then construct a balanced master dataset.
-eligible_artists <- song_features |>
+# Identify artists with at least one complete matched song.
+selected_artists <- song_features |>
   distinct(target_artist)
 
-if (nrow(eligible_artists) < n_artists) {
-  cli::cli_abort(c(
-    "Only {nrow(eligible_artists)} Artist 100 artists had complete matched acoustic data.",
-    "i" = "Fewer artists cannot be substituted without changing the sampling criterion."
-  ))
-}
+unmatched_artists <- artist_pool |>
+  anti_join(selected_artists, by = "target_artist")
 
-set.seed(artist_seed)
-selected_artists <- eligible_artists |>
-  slice_sample(n = n_artists)
+if (nrow(unmatched_artists) > 0L) {
+  cli::cli_warn(c(
+    "{nrow(unmatched_artists)} selected artists had no complete matched songs.",
+    "i" = "The unmatched artists are listed below."
+  ))
+
+  print(unmatched_artists, n = 200)
+}
 
 set.seed(song_seed)
 
-textbook_songs <- song_features |>
+acoustic_brainz <- song_features |>
   semi_join(selected_artists, by = "target_artist") |>
   group_by(target_artist) |>
   slice_sample(n = max_songs_per_artist) |>
@@ -464,26 +460,12 @@ textbook_songs <- song_features |>
 
 # Diagnostics -------------------------------------------------------------
 
-artist_counts <- textbook_songs |>
+artist_counts <- acoustic_brainz |>
   count(target_artist, name = "n_songs") |>
   arrange(n_songs, target_artist)
 
 print(artist_counts, n = Inf)
 
-if (nrow(textbook_songs) < 200L) {
-  cli::cli_warn(c(
-    "The final dataset contains only {nrow(textbook_songs)} songs.",
-    "i" = "Inspect artist coverage before changing the sampling rules."
-  ))
-}
-
 # Save the cleaned data ---------------------------------------------------
 
-dir_create(output_dir)
-write_csv(textbook_songs, output_file, na = "")
-
-cli::cli_inform(c(
-  "v" = "Wrote {nrow(textbook_songs)} songs to {.path {output_file}}.",
-  "i" = "The dataset contains 15 numeric clustering features plus song metadata.",
-  "i" = "Standardize the clustering features before fitting k-means."
-))
+usethis::use_data(acoustic_brainz, overwrite = TRUE)

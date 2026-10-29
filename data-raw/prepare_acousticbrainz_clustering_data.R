@@ -1,4 +1,4 @@
-# Prepare an AcousticBrainz dataset for teaching k-means clustering
+# The acoustic_brainz dataset uses multiple data files that you'll need to retrieve
 #
 # Data sources:
 # - AcousticBrainz low-level feature dumps (CC0):
@@ -14,8 +14,7 @@
 # Before running this script, download and extract these four archives into
 # data-raw/unextracted-files/:
 #
-# After extraction, data-raw/acousticbrainz/ (including subdirectories) must
-# contain these four CSV files:
+# After extraction, data-raw/acousticbrainz/ must contain these five CSV files:
 #
 # - acousticbrainz-lowlevel-features-20220623-lowlevel.csv
 # - acousticbrainz-lowlevel-features-20220623-rhythm.csv
@@ -24,8 +23,7 @@
 # - canonical_musicbrainz_data.csv
 #
 # The source files contain tens of millions of rows. DuckDB reads and filters
-# them without loading the complete files into R's memory. All data cleaning
-# and sampling after that initial filtering use dplyr/tidyverse syntax.
+# them without loading the complete files into R's memory.
 
 library(tidyverse)
 library(DBI)

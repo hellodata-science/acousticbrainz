@@ -1,1 +1,144 @@
+#' Music recordings and acoustic features
+#'
+#' A teaching dataset for exploring and clustering music recordings using
+#' acoustic features. The data combine AcousticBrainz audio analyses with
+#' MusicBrainz canonical recording metadata for a selected list of artists.
+#' Each row represents a canonical recording, with up to 25 recordings
+#' retained per selected artist.
+#'
+#' @format A tibble with 24 variables:
+#' \describe{
+#'   \item{recording_mbid}{Character. MusicBrainz identifier for the canonical
+#'     recording. Identifies a particular recording rather than a musical
+#'     composition in general.}
+#'   \item{target_artist}{Character. Artist name from the artist-selection
+#'     file used to prepare the dataset.}
+#'   \item{release_mbid}{Character. MusicBrainz identifier for the release
+#'     associated with the selected metadata record.}
+#'   \item{artist}{Character. Artist credit from MusicBrainz. Matching to
+#'     the selected artist list ignores capitalization and leading or
+#'     trailing whitespace.}
+#'   \item{song}{Character. Recording title from MusicBrainz.}
+#'   \item{release}{Character. Release title from MusicBrainz. This is not
+#'     necessarily the recording's first release.}
+#'   \item{key}{Character. Estimated musical key, expressed as a pitch-class
+#'     name such as C or F#. Taken from the first retained acoustic analysis
+#'     within each canonical recording.}
+#'   \item{scale}{Character. Estimated musical scale, typically major or
+#'     minor. Taken from the first retained acoustic analysis within each
+#'     canonical recording.}
+#'   \item{average_loudness}{Numeric. Normalized loudness descriptor on a
+#'     scale from 0 to 1. Higher values indicate less dynamic range.
+#'     This is not a loudness measurement in decibels.}
+#'   \item{dynamic_complexity}{Numeric. Descriptor of loudness fluctuations,
+#'     based on average absolute deviation from estimated global loudness
+#'     on the decibel scale. Higher values indicate greater fluctuation.}
+#'   \item{mfcc_zero_mean}{Numeric. Mean of the zeroth mel-frequency cepstral
+#'     coefficient (MFCC), as supplied in the AcousticBrainz feature dump.
+#'     A technical descriptor derived from the audio spectrum.}
+#'   \item{bpm}{Numeric. Estimated tempo in beats per minute.}
+#'   \item{bpm_first_peak_mean}{Numeric. Source-reported mean tempo at the
+#'     highest peak of the BPM histogram, in beats per minute.}
+#'   \item{bpm_first_peak_median}{Numeric. Source-reported median tempo at
+#'     the highest peak of the BPM histogram, in beats per minute.}
+#'   \item{bpm_second_peak_mean}{Numeric. Source-reported mean tempo at the
+#'     second-highest peak of the BPM histogram, in beats per minute.}
+#'   \item{bpm_second_peak_median}{Numeric. Source-reported median tempo at
+#'     the second-highest peak of the BPM histogram, in beats per minute.}
+#'   \item{danceability}{Numeric. Algorithmic estimate of danceability.
+#'     Higher values indicate greater estimated danceability. This is
+#'     neither a probability nor a human rating.}
+#'   \item{onset_rate}{Numeric. Number of detected sound onsets per second,
+#'     describing how frequently new sound events begin.}
+#'   \item{tuning_frequency}{Numeric. Estimated reference tuning frequency,
+#'     in hertz.}
+#'   \item{tuning_equal_tempered_deviation}{Numeric. Descriptor of deviations
+#'     of spectral pitch-profile peaks from equal-tempered pitch positions.
+#'     Higher values indicate greater deviation.}
+#'   \item{key_sine}{Numeric. Sine component of a circular encoding of key:
+#'     sin(2 * pi * k / 12), where k assigns C = 0, C# or Db = 1, through
+#'     B = 11. Values are summarized by their median when multiple acoustic
+#'     recordings map to the same canonical recording.}
+#'   \item{key_cosine}{Numeric. Cosine component of the same circular key
+#'     encoding: cos(2 * pi * k / 12). Values are summarized by their median
+#'     when multiple acoustic recordings map to the same canonical recording.}
+#'   \item{minor_scale}{Integer. Indicator equal to 1 when at least half
+#'     of the retained acoustic analyses for the canonical recording
+#'     identify a minor scale, and 0 otherwise. Ties are coded as 1.}
+#'   \item{n_acoustic_recordings}{Integer. Number of retained AcousticBrainz
+#'     recording analyses combined to create the row. Only the first
+#'     submission for each original recording identifier is considered.}
+#' }
+#'
+#' @details
+#' \strong{Selection and matching}
+#'
+#' Artists were selected using the preparation file
+#' \code{artists-to-select.csv}. MusicBrainz artist credits were matched
+#' to this list using case-insensitive matching after trimming leading
+#' and trailing whitespace. When multiple metadata rows were available
+#' for a recording, the row with the highest metadata score was retained.
+#'
+#' Original recording identifiers were linked to canonical recording
+#' identifiers using the MusicBrainz canonical recording redirect table.
+#' Recordings were retained only when matching metadata and all three
+#' AcousticBrainz feature types (low-level, rhythm, and tonal) were available.
+#'
+#' \strong{Cleaning and aggregation}
+#'
+#' Only AcousticBrainz submissions with \code{submission_offset == 0}
+#' were retained. Analyses with missing or nonfinite values in any of
+#' the selected numeric clustering features were removed before aggregation.
+#'
+#' When multiple original recordings mapped to the same canonical recording,
+#' numeric acoustic features were combined using medians. The
+#' \code{key_sine} and \code{key_cosine} variables were also combined
+#' using separate medians. The \code{minor_scale} indicator was determined
+#' by majority vote, with ties classified as minor.
+#'
+#' The character variables \code{key} and \code{scale} were taken from the
+#' first retained analysis rather than determined by majority vote.
+#' Consequently, they may not agree with the summarized key components
+#' or \code{minor_scale}. The summarized sine and cosine components also
+#' need not lie exactly on the unit circle.
+#'
+#' Up to 25 canonical recordings per matched artist were randomly selected
+#' without replacement, using seed 20260925. Artists with fewer than
+#' 25 eligible recordings contribute all eligible recordings; artists
+#' with no eligible recordings are absent.
+#'
+#' \strong{Use and interpretation}
+#'
+#' Acoustic features are algorithmic estimates rather than human
+#' assessments. The features have not been standardized in this dataset.
+#' Consider their different units and scales before applying
+#' distance-based clustering.
+#'
+#' Identifiers, artist names, titles, and \code{n_acoustic_recordings}
+#' provide context and provenance; they are not acoustic features.
+#' The paired \code{key_sine} and \code{key_cosine} variables represent
+#' pitch classes on a chromatic circle, not the circle of fifths.
+#'
+#' The artist list was deliberately selected for teaching. The dataset
+#' is not a representative sample of all music, artists, or recordings.
+#' The date of the AcousticBrainz dump does not indicate when the music
+#' was recorded or released.
+#'
+#' @source
+#' AcousticBrainz low-level, rhythm, and tonal feature dumps dated
+#' June 23, 2022:
+#' \url{https://acousticbrainz.org/download}
+#'
+#' MusicBrainz Canonical Data Dumps, using
+#' \code{canonical_recording_redirect.csv} and
+#' \code{canonical_musicbrainz_data.csv}:
+#' \url{https://metabrainz.org/datasets/download}
+#'
+#' The source acoustic data and MusicBrainz core metadata were released
+#' under CC0. Preparation code and source-file details are provided in
+#' the package repository's \code{data-raw} directory.
+#'
+#' @references
+#' Essentia music feature documentation:
+#' \url{https://essentia.upf.edu/streaming_extractor_music.html}
 "acoustic_brainz"

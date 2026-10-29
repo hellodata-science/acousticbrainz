@@ -7,7 +7,7 @@ Authors@R: c(
     person("Alma", "Castro", , role = "aut")
     )
 Description: What the package does (one paragraph).
-License: GPL (>= 3)
+License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0

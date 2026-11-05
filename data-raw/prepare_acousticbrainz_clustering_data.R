@@ -378,10 +378,10 @@ song_features <- target_recordings |>
         danceability,
         onset_rate,
         tuning_frequency,
-        tuning_equal_tempered_deviation,
-        key_sine,
-        key_cosine,
-        minor_scale
+        tuning_equal_tempered_deviation #,
+        # key_sine,
+        # key_cosine,
+        # minor_scale
       ),
       ~ !is.na(.x) & is.finite(.x)
     )
@@ -413,13 +413,13 @@ song_features <- target_recordings |>
         danceability,
         onset_rate,
         tuning_frequency,
-        tuning_equal_tempered_deviation,
-        key_sine,
-        key_cosine
+        tuning_equal_tempered_deviation#,
+        #key_sine,
+        #key_cosine
       ),
       ~ median(.x, na.rm = TRUE)
     ),
-    minor_scale = as.integer(mean(minor_scale, na.rm = TRUE) >= 0.5),
+    #minor_scale = as.integer(mean(minor_scale, na.rm = TRUE) >= 0.5),
     n_acoustic_recordings = n(),
     .groups = "drop"
   )

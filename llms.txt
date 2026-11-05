@@ -1,4 +1,20 @@
-What the package does (one paragraph).
+# acousticbrainz
+
+The goal of acousticbrainz is to provide a dataset on musical features
+of songs. This dataset was wrangled for use in the [Hello Data
+Science](https://hellodata.science/) textbook to learn clustering
+methods. Documentation for this package is a work in progress.
+
+## Installation
+
+You can install the development version of acousticbrainz from
+[GitHub](https://github.com/) with:
+
+``` r
+
+# install.packages("pak")
+pak::pak("hellodata-science/acousticbrainz")
+```
 
 # Package index
 
